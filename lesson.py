@@ -204,18 +204,23 @@ def _mp3_seconds(path: Path) -> float:
     return path.stat().st_size * 8 / (MP3_KBPS_GUESS * 1000)
 
 
+DISPATCH = None  # set by register(): ctx.dispatch_tool, Hermes' public way to call another tool
+
+
 def _speak(text: str, out: Path, voice: str | None) -> Path | None:
-    try:
-        from tools.tts_tool import text_to_speech_tool
-    except Exception:  # pragma: no cover - outside Hermes
+    """Voice one step through the user's own Hermes text_to_speech tool (their provider and voice)."""
+    if DISPATCH is None:
         return None
+    args = {"text": text, "output_path": str(out)}
+    if voice:
+        args["voice_id"] = voice
     try:
-        res = json.loads(text_to_speech_tool(text, output_path=str(out), voice_id=voice or None))
+        res = json.loads(DISPATCH("text_to_speech", args))
     except Exception:
         logger.debug("chalk: tts failed", exc_info=True)
         return None
-    if not res.get("success"):
-        logger.info("chalk: tts unavailable: %s", res.get("error"))
+    if not isinstance(res, dict) or not res.get("success"):
+        logger.info("chalk: tts unavailable: %s", res.get("error") if isinstance(res, dict) else res)
         return None
     p = Path(res.get("file_path") or out)
     return p if p.exists() else None

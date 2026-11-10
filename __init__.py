@@ -215,6 +215,8 @@ def register(ctx) -> None:
             _settings[key] = ctx.get_config(key, default=default)
         except Exception:
             _settings[key] = default
+    if callable(getattr(ctx, "dispatch_tool", None)):
+        L.DISPATCH = ctx.dispatch_tool
     ctx.register_tool(name="chalk_teach", toolset="chalk", schema=CHALK_TEACH, handler=chalk_teach)
     ctx.register_hook("transform_llm_output", on_transform_llm_output)
     try:
