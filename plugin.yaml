@@ -1,0 +1,30 @@
+name: chalk
+version: 0.1.0
+manifest_version: 2
+api_version: 1
+requires_hermes: ">=0.23.0"
+description: >-
+  Hermes teaches on a chalkboard. Ask it to explain anything and Hermes Desktop draws the lesson
+  in the chat, stroke by stroke in chalk, while Hermes talks you through it in its own voice.
+  Replay it, or save it as a video.
+author: NNADI Joshua (0xserenity)
+license: MIT
+homepage: https://github.com/Nnadijoshuac/hermes-chalk
+tags: [teaching, explain, chalkboard, whiteboard, desktop, voice, video, education]
+provides_tools:
+  - chalk_teach
+provides_hooks:
+  - transform_llm_output
+config_schema:
+  voice:
+    type: str
+    default: ""
+    description: "Voice id passed to your configured Hermes text-to-speech provider (empty = your TTS default)."
+  narrate:
+    type: bool
+    default: true
+    description: "Speak the lesson aloud. Off = the board draws with captions only."
+  video_dir:
+    type: str
+    default: ""
+    description: "Where 'Save video' writes lessons (default ~/Videos/Chalk)."
