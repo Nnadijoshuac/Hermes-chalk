@@ -219,7 +219,7 @@ const startOf = s => (s.kind === 'path' ? s.pts[0] : [s.x, s.y - s.size * 0.3])
 // board scales down together if it would not fit.
 function natural(b) {
   switch (b.type) {
-    case 'title': return { w: CONTENT.w, h: 120, full: true }
+    case 'title': return { w: Math.min(CONTENT.w, measure(b.text, 78) + 60), h: 120, full: true }
     case 'flow': return { w: Math.min(CONTENT.w, b.items.length * 330), h: 170 + (b.label ? 50 : 0), full: true }
     case 'list': {
       const tw = Math.max(...b.items.map(t => measure(t, 46))) + 90
@@ -253,7 +253,9 @@ function layoutBoard(blocks) {
   const place = new Map()
   let y = CONTENT.y
   const used = total * s
-  if (used < CONTENT.h) {
+  if (used < CONTENT.h && items.length <= 3 && used < CONTENT.h * 0.62) {
+    rows.offset = [0, (CONTENT.h - used) / 2] // a sparse board sits in the middle, like a title slide
+  } else if (used < CONTENT.h) {
     const head = rows[0] && rows[0].blocks[0].b.type === 'title' ? rows[0].h * s + gap * s : 0
     const spare = CONTENT.h - used
     rows.offset = head ? [head, spare * 0.42] : [0, spare * 0.42]
@@ -286,7 +288,7 @@ function compileBlock(b, r, texts) {
   const cx = r.x + r.w / 2
   switch (b.type) {
     case 'title': {
-      const size = fitSize(b.text, 78 * s, r.w * 0.9)
+      const size = fitSize(b.text, 78 * s, Math.max(r.w - 8, CONTENT.w * 0.4))
       const t = T(b.text, cx, r.y + 78 * s, size, 'white')
       out.push(path(wavyUnderline(t.x - 10, r.y + 100 * s, t.w + 20), 'yellow', 5 * s))
       break
@@ -487,7 +489,7 @@ function buildTimeline(lesson) {
 function captionAt(st, lt) {
   if (!st.say) return ''
   if (!st.sentences) {
-    st.sentences = st.say.match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g)?.map(x => x.trim()).filter(Boolean) || [st.say]
+    st.sentences = st.say.match(/[^.!?]+[.!?]+["'”’)\]]*|[^.!?]+$/g)?.map(x => x.trim()).filter(Boolean) || [st.say]
     const merged = []
     for (const x of st.sentences) {
       if (merged.length && (merged[merged.length - 1] + ' ' + x).length < 90) merged[merged.length - 1] += ' ' + x
