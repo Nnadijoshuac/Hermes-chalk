@@ -9,7 +9,7 @@ description: >-
   Replay it, or save it as a video.
 author: NNADI Joshua (0xserenity)
 license: MIT
-homepage: https://github.com/Nnadijoshuac/hermes-chalk
+homepage: https://github.com/Nnadijoshuac/Hermes-chalk
 tags: [teaching, explain, chalkboard, whiteboard, desktop, voice, video, education]
 provides_tools:
   - chalk_teach
