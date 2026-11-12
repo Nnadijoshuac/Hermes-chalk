@@ -833,6 +833,12 @@ function createBoard(canvas, lesson, audioUrls) {
     return pen
   }
   function finishStep(st) {
+    // A dropped frame (background tab, slow machine) can jump past a whole eraser step; still wipe.
+    if (st.clear && !st.wiped) {
+      cg.clearRect(0, 0, W, H)
+      markAll()
+      st.wiped = true
+    }
     for (const s of st.strokes) {
       if (s.done < 1) (s.kind === 'path' ? inkPath : inkText)(s, 1)
     }
