@@ -15,7 +15,7 @@ Then ask: *"Teach me how attention works in a transformer, on the chalkboard."*
 3. Desktop lays out the board and draws it stroke by stroke: boxes, arrows, handwriting, graphs, a circle around the key idea. The drawing keeps pace with the voice, and an eraser wipes the board when it fills up.
 4. **Save video** records the lesson and saves it as an MP4 (to `~/Videos/Chalk`, or `~/Downloads/Chalk` if Windows blocks Videos).
 
-Models are bad at coordinates and good at structure, so the agent never places anything. It says *what* goes on the board (a flow, a list, a comparison, an equation, a graph, a cycle, a tree, a note, a circle or underline on a word) and the board works out *where* it goes. Small free models produce clean boards this way.
+Models are bad at coordinates and good at structure, so the agent never places anything. It says *what* goes on the board (a flow, a list, a comparison, an equation, a graph, a cycle, a tree, a note, a labelled sketch, a circle or underline on a word) and the board works out *where* it goes. Small free models produce clean boards this way.
 
 | Block | Draws |
 |---|---|
@@ -28,6 +28,7 @@ Models are bad at coordinates and good at structure, so the agent never places a
 | `cycle` | labels around a loop of arrows |
 | `tree` | one idea branching into parts |
 | `note` | a small handwritten remark |
+| `sketch` | a simple labelled drawing of a real thing (an engine cylinder, a heart, a circuit), built from boxes, circles, lines and arrows on a 0-100 grid |
 | `mark` | circles or underlines words already on the board |
 | `clear` | the eraser wipes the board |
 

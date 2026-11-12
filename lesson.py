@@ -26,7 +26,7 @@ MAX_STEPS = 14
 MAX_ITEMS = 6
 MAX_SAY = 400
 MAX_TEXT = 80
-BLOCK_TYPES = ("title", "flow", "list", "compare", "equation", "graph", "cycle", "tree", "note", "mark", "clear")
+BLOCK_TYPES = ("title", "flow", "list", "compare", "equation", "graph", "cycle", "tree", "note", "sketch", "mark", "clear")
 GRAPH_FN = re.compile(r"^[0-9x\s+\-*/^().,]*(?:(?:sin|cos|tan|exp|log|sqrt|abs|pi|e)[0-9x\s+\-*/^().,]*)*$")
 
 
@@ -85,6 +85,66 @@ def _number(value: Any, default: float) -> float:
         return default
 
 
+MAX_SHAPES = 30
+SHAPE_COLORS = ("white", "yellow", "pink", "blue", "green")
+
+
+def _pt(value: Any) -> list[float] | None:
+    if isinstance(value, (list, tuple)) and len(value) >= 2:
+        x, y = _number(value[0], float("nan")), _number(value[1], float("nan"))
+        if x == x and y == y:
+            return [round(max(-30.0, min(130.0, x)), 2), round(max(-10.0, min(110.0, y)), 2)]
+    return None
+
+
+def clean_shape(raw: Any) -> dict | None:
+    """One sketch primitive on a 0-100 grid (x right, y down). Bad shapes are dropped."""
+    if not isinstance(raw, dict):
+        return None
+    kind = str(raw.get("shape") or raw.get("type") or "").strip().lower()
+    kind = {"box": "rect", "rectangle": "rect", "ellipse": "circle", "polyline": "path", "poly": "path",
+            "polygon": "path", "callout": "label", "text": "label"}.get(kind, kind)
+    num = lambda k, d=float("nan"): _number(raw.get(k), d)
+    color = str(raw.get("color") or "white").lower()
+    out: dict = {"shape": kind, "color": color if color in SHAPE_COLORS else "white"}
+    if kind == "rect":
+        x, y, w, h = num("x"), num("y"), num("w", num("width")), num("h", num("height"))
+        if any(v != v for v in (x, y, w, h)) or w <= 0 or h <= 0:
+            return None
+        out.update(x=x, y=y, w=min(w, 140.0), h=min(h, 120.0))
+    elif kind == "circle":
+        x, y, r = num("x", num("cx")), num("y", num("cy")), num("r", num("radius"))
+        if any(v != v for v in (x, y, r)) or r <= 0:
+            return None
+        out.update(x=x, y=y, r=min(r, 60.0))
+    elif kind in ("line", "arrow"):
+        a = _pt(raw.get("from")) or _pt([raw.get("x1"), raw.get("y1")])
+        b = _pt(raw.get("to")) or _pt([raw.get("x2"), raw.get("y2")])
+        if not a or not b:
+            return None
+        out.update(**{"from": a, "to": b})
+    elif kind == "path":
+        pts = [p for p in (_pt(v) for v in (raw.get("points") or [])[:40]) if p]
+        if len(pts) < 2:
+            return None
+        out.update(points=pts, closed=bool(raw.get("closed")))
+    elif kind == "label":
+        text = _text(raw.get("text") or raw.get("label"), 32)
+        at = _pt(raw.get("at")) or _pt([raw.get("x"), raw.get("y")])
+        if not text or not at:
+            return None
+        out.update(text=text, at=at)
+        to = _pt(raw.get("to")) or _pt(raw.get("points_to"))
+        if to:
+            out["to"] = to
+    else:
+        return None
+    for k in ("x", "y", "w", "h", "r"):
+        if k in out:
+            out[k] = round(max(-30.0, min(130.0, out[k])), 2)
+    return out
+
+
 def clean_block(raw: Any) -> dict | None:
     """One drawable block, normalised. Unknown or empty blocks become None (the step just talks)."""
     if not isinstance(raw, dict):
@@ -93,7 +153,7 @@ def clean_block(raw: Any) -> dict | None:
     aliases = {"heading": "title", "steps": "flow", "process": "flow", "pipeline": "flow", "bullets": "list",
                "points": "list", "vs": "compare", "formula": "equation", "math": "equation", "plot": "graph",
                "chart": "graph", "loop": "cycle", "hierarchy": "tree", "text": "note", "circle": "mark",
-               "highlight": "mark", "underline": "mark", "erase": "clear", "new_board": "clear"}
+               "highlight": "mark", "drawing": "sketch", "diagram": "sketch", "picture": "sketch", "underline": "mark", "erase": "clear", "new_board": "clear"}
     style = "underline" if kind == "underline" else "circle"
     kind = aliases.get(kind, kind)
     if kind not in BLOCK_TYPES:
@@ -138,6 +198,14 @@ def clean_block(raw: Any) -> dict | None:
         root = _text(raw.get("root") or raw.get("text") or raw.get("label"), 40)
         kids = _items(raw.get("children") or raw.get("items"), 1, 5)
         return {"type": "tree", "root": root, "children": kids} if root and kids else None
+    if kind == "sketch":
+        shapes = [sh for sh in (clean_shape(x) for x in (raw.get("shapes") or raw.get("parts") or [])[:MAX_SHAPES]) if sh]
+        if not shapes:
+            return None
+        block = {"type": "sketch", "shapes": shapes}
+        if raw.get("label") or raw.get("caption"):
+            block["label"] = _text(raw.get("label") or raw.get("caption"), 48)
+        return block
     if kind == "mark":
         target = _text(raw.get("target") or raw.get("text") or raw.get("word"), 48)
         st = str(raw.get("style") or style).lower()

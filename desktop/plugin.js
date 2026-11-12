@@ -231,6 +231,7 @@ function natural(b) {
     case 'cycle': return { w: 560, h: 440 }
     case 'tree': return { w: Math.min(CONTENT.w, Math.max(700, b.children.length * 320)), h: 300, full: true }
     case 'note': return { w: Math.min(CONTENT.w, measure(b.text, 42) + 40), h: 74 }
+    case 'sketch': return { w: 820, h: 560 + (b.label ? 54 : 0) }
     default: return { w: 0, h: 0 }
   }
 }
@@ -400,6 +401,47 @@ function compileBlock(b, r, texts) {
         out.push(path(rectPts(x - cw / 2, cyy, cw, 90 * s), 'white', 5 * s))
         T(c, x, cyy + 58 * s, fitSize(c, 38 * s, cw - 24 * s), 'white')
       })
+      break
+    }
+    case 'sketch': {
+      // Shapes live on a 0-100 grid (x right, y down), mapped onto a square in the middle of the block.
+      const labelH = b.label ? 54 * s : 0
+      const G = Math.min(r.w * 0.66, r.h - labelH - 10 * s)
+      const ox = cx - G / 2, oy = r.y + 4 * s
+      const P = p => [ox + (p[0] * G) / 100, oy + (p[1] * G) / 100]
+      const u = v => (v * G) / 100
+      for (const sh of b.shapes) {
+        const col = sh.color || 'white'
+        if (sh.shape === 'rect') {
+          const [x, y] = P([sh.x, sh.y])
+          out.push(path(rectPts(x, y, u(sh.w), u(sh.h)), col, 5 * s))
+        } else if (sh.shape === 'circle') {
+          const [x, y] = P([sh.x, sh.y])
+          out.push(path(ellipsePts(x, y, u(sh.r), u(sh.r), 1.04, 0), col, 5 * s))
+        } else if (sh.shape === 'line') {
+          out.push(path(line(P(sh.from), P(sh.to), 0.015), col, 5 * s))
+        } else if (sh.shape === 'arrow') {
+          out.push(...arrowStrokes(P(sh.from), P(sh.to), col, 5 * s))
+        } else if (sh.shape === 'path') {
+          const ps = sh.points.map(P)
+          if (sh.closed) ps.push(ps[0])
+          const pts = []
+          for (let i = 1; i < ps.length; i++) pts.push(...line(ps[i - 1], ps[i], 0.01))
+          out.push(path(pts, col, 5 * s))
+        } else if (sh.shape === 'label') {
+          const at = P(sh.at)
+          const size = 34 * s
+          const to = sh.to ? P(sh.to) : null
+          const align = to ? (to[0] >= at[0] ? 'right' : 'left') : 'center'
+          const t = T(sh.text, at[0], at[1] + size * 0.32, size, sh.color && sh.color !== 'white' ? col : 'blue', align)
+          if (to) {
+            const sx = align === 'right' ? t.x + t.w + 10 * s : t.x - 10 * s
+            out.push(path(line([sx, at[1]], to, 0.02), 'blue', 3 * s))
+            out.push(path(ellipsePts(to[0], to[1], 4 * s, 4 * s, 1.2, 0), 'blue', 5 * s))
+          }
+        }
+      }
+      if (b.label) T(b.label, cx, r.y + r.h - 14 * s, 38 * s, 'yellow')
       break
     }
     case 'note': {

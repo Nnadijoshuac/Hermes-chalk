@@ -31,6 +31,11 @@ BLOCK_DOC = (
     "  {type:'cycle', items:[3-5 labels]}         labels round a circle with arrows (a loop)\n"
     "  {type:'tree', root, children:[1-5]}        one idea branching into parts\n"
     "  {type:'note', text}                        a short handwritten remark\n"
+    "  {type:'sketch', label, shapes:[...]}       a simple drawing of a real object (engine part, heart, circuit,\n"
+    "      cell, bridge). Coordinates on a 0-100 grid, x right, y down. Shapes:\n"
+    "      {shape:'rect', x, y, w, h}  {shape:'circle', x, y, r}  {shape:'line'|'arrow', from:[x,y], to:[x,y]}\n"
+    "      {shape:'path', points:[[x,y],...], closed}  {shape:'label', text, at:[x,y], to:[x,y]} (to = the part it names)\n"
+    "      optional color: white|yellow|pink|blue|green. 4-20 shapes. Draw the outline first, then the moving parts, then labels.\n"
     "  {type:'mark', target, style:'circle'|'underline'}   circle/underline words already on the board\n"
     "  {type:'clear'}                             wipe the board and start a fresh one\n"
 )
@@ -43,7 +48,8 @@ CHALK_TEACH = {
         "the user asks you to explain, teach or walk them through an idea, or says 'chalkboard'/'whiteboard'/"
         "'draw it'. Plan 5-10 steps. Each step: 'say' = one or two spoken sentences, plain words, no markdown; "
         "'draw' = one block that appears while that sentence is spoken (omit it to just talk). Build the board up "
-        "gradually, the way a good teacher does: title, then the core picture, then detail, then circle the key "
+        "gradually, the way a good teacher does: title, then the core picture, then detail. When the topic is a physical thing (a machine, an organ, a "
+        "device, a structure), draw it with a 'sketch' and label its parts instead of only boxes and arrows, then circle the key "
         "idea. Use {type:'clear'} before a second board. After the tool returns, reply with ONE short sentence "
         "and the MEDIA line it gives you; do not repeat the lesson in text.\n" + BLOCK_DOC
     ),

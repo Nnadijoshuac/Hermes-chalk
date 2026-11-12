@@ -55,3 +55,17 @@ def test_tool_writes_lesson_and_media_without_tts():
         fixed = chalk.on_transform_llm_output(response_text="Here you go.", session_id="s1")
         assert fixed and "MEDIA:" in fixed
         assert chalk.on_transform_llm_output(response_text="again", session_id="s1") is None
+
+
+def test_sketch_block_cleans_shapes():
+    b = L.clean_block({"type": "sketch", "label": "a piston", "shapes": [
+        {"shape": "rect", "x": 30, "y": 10, "w": 40, "h": 70},
+        {"shape": "circle", "x": 50, "y": 85, "r": 9},
+        {"shape": "arrow", "from": [50, 40], "to": [50, 20]},
+        {"shape": "label", "text": "cylinder", "at": [95, 20], "to": [70, 25]},
+        {"shape": "rect", "x": "oops"},
+        {"shape": "laser"},
+    ]})
+    assert b["type"] == "sketch" and b["label"] == "a piston"
+    assert [s["shape"] for s in b["shapes"]] == ["rect", "circle", "arrow", "label"]
+    assert L.clean_block({"type": "sketch", "shapes": [{"shape": "nope"}]}) is None
